@@ -1,0 +1,39 @@
+from numpy.core.fromnumeric import var
+import scrapy
+import pandas as pd
+
+class AmazonSpider(scrapy.Spider):
+    name = 'amazon'
+    all_name = []
+    all_price = []
+    all_review=[]
+    full_next =''
+    counter =2
+    start_urls = ['https://www.amazon.in/s?k=ultrawide+monitors&ref=nb_sb_noss']
+    base_url = 'https://www.amazon.com'
+    def parse(self, response):
+        body = response.css('.s-latency-cf-section')
+        next =[]
+        next = response.css('.a-last a::attr(href)').extract()
+        for variables in next:
+            AmazonSpider.full_next = AmazonSpider.base_url+ str(variables)
+            print(AmazonSpider.full_next)
+            for variable in body:
+                    name = variable.css('.a-size-medium.a-text-normal::text').extract_first()
+                    price = variable.css('.a-price-whole::text').extract_first()
+                    review = variable.css('.aok-align-bottom').css('.a-icon-alt::text').extract_first()
+                    AmazonSpider.all_name.append(name)
+                    AmazonSpider.all_price.append(price)
+                    AmazonSpider.all_review.append(review)
+        if next is not None: 
+                try_url ='https://www.amazon.in/s?k=ultrawide+monitors&page='+str(AmazonSpider.counter)+'&qid=1607963269&ref=sr_pg_2' 
+                yield scrapy.Request(try_url,callback =self.parse)
+                AmazonSpider.counter += 1
+        name_df = pd.DataFrame({'name':AmazonSpider.all_name})
+        print(name_df)
+        price_df = pd.DataFrame({'price':AmazonSpider.all_price})
+        print(price_df)
+        review_df= pd.DataFrame({'review':AmazonSpider.all_review})
+        print(review_df)
+        final_df = pd.DataFrame({'name':AmazonSpider.all_name,'price':AmazonSpider.all_price,'review':AmazonSpider.all_review})
+        final_df.to_csv('finalitems.csv')
